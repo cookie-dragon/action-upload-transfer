@@ -1,0 +1,60 @@
+name: '文件上传 Action by Transfer'
+author: 'Cooky.Long'
+description: '文件上传-Transfer'
+inputs:
+  backends:
+    description: '上传站点: [cow|wet]'
+    required: true
+    default: ''
+  your_file:
+    description: '文件路径'
+    required: true
+    default: ''
+outputs:
+  cow_DownloadLink:
+    description: "下载链接 cow"
+    value: ${{ steps.file_upload.outputs.cow_DownloadLink }}
+  cow_DownloadCode:
+    description: "下载取件码 cow"
+    value: ${{ steps.file_upload.outputs.cow_DownloadCode }}
+  wet_DownloadLink:
+    description: "下载链接 wet"
+    value: ${{ steps.file_upload.outputs.wet_DownloadLink }}
+runs:
+  using: "composite"
+  steps: 
+    - id: file_upload
+      run: |
+          cow_DownloadLink=''
+          cow_DownloadCode=''
+          wet_DownloadLink=''
+
+          OLD_IFS="$IFS"
+          IFS=","
+          array_backends=(${{ inputs.backends }})
+          IFS="$OLD_IFS"
+
+          curl -fsSL git.io/file-transfer | sh
+
+          if [[ ${array_backends[@]/"cow"/} != ${array_backends[@]} ]]; then
+            ./transfer cow --block 2621440 -s -p 64 --no-progress ${{ inputs.your_file }} 2>&1 | tee cowtransfer.log
+
+            L2=`sed -n '2p' cowtransfer.log`
+            L3=`sed -n '3p' cowtransfer.log`
+            cow_DownloadLink=${L2#*: }
+            cow_DownloadCode=${L3#*: }
+          fi
+
+          if [[ ${array_backends[@]/"wet"/} != ${array_backends[@]} ]]; then
+            ./transfer wet -s -p 16 --no-progress ${{ inputs.your_file }} 2>&1 | tee wetransfer.log
+
+            L3=`sed -n '3p' wetransfer.log`
+            wet_DownloadLink=${L3#*: }
+          fi
+
+          echo "::set-output name=cow_DownloadLink::${cow_DownloadLink}"
+          echo "::set-output name=cow_DownloadCode::${cow_DownloadCode}"
+          echo "::set-output name=wet_DownloadLink::${wet_DownloadLink}"
+        fi
+      shell: bash
+      
