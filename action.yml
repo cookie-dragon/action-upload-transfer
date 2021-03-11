@@ -25,36 +25,34 @@ runs:
   steps: 
     - id: file_upload
       run: |
-          cow_DownloadLink=''
-          cow_DownloadCode=''
-          wet_DownloadLink=''
+        cow_DownloadLink=''
+        cow_DownloadCode=''
+        wet_DownloadLink=''
 
-          OLD_IFS="$IFS"
-          IFS=","
-          array_backends=(${{ inputs.backends }})
-          IFS="$OLD_IFS"
+        OLD_IFS="$IFS"
+        IFS=","
+        array_backends=(${{ inputs.backends }})
+        IFS="$OLD_IFS"
 
-          curl -fsSL git.io/file-transfer | sh
+        curl -fsSL git.io/file-transfer | sh
 
-          if [[ ${array_backends[@]/"cow"/} != ${array_backends[@]} ]]; then
-            ./transfer cow --block 2621440 -s -p 64 --no-progress ${{ inputs.your_file }} 2>&1 | tee cowtransfer.log
+        if [[ ${array_backends[@]/"cow"/} != ${array_backends[@]} ]]; then
+          ./transfer cow --block 2621440 -s -p 64 --no-progress ${{ inputs.your_file }} 2>&1 | tee cowtransfer.log
 
-            L2=`sed -n '2p' cowtransfer.log`
-            L3=`sed -n '3p' cowtransfer.log`
-            cow_DownloadLink=${L2#*: }
-            cow_DownloadCode=${L3#*: }
-          fi
-
-          if [[ ${array_backends[@]/"wet"/} != ${array_backends[@]} ]]; then
-            ./transfer wet -s -p 16 --no-progress ${{ inputs.your_file }} 2>&1 | tee wetransfer.log
-
-            L3=`sed -n '3p' wetransfer.log`
-            wet_DownloadLink=${L3#*: }
-          fi
-
-          echo "::set-output name=cow_DownloadLink::${cow_DownloadLink}"
-          echo "::set-output name=cow_DownloadCode::${cow_DownloadCode}"
-          echo "::set-output name=wet_DownloadLink::${wet_DownloadLink}"
+          L2=`sed -n '2p' cowtransfer.log`
+          L3=`sed -n '3p' cowtransfer.log`
+          cow_DownloadLink=${L2#*: }
+          cow_DownloadCode=${L3#*: }
         fi
+
+        if [[ ${array_backends[@]/"wet"/} != ${array_backends[@]} ]]; then
+          ./transfer wet -s -p 16 --no-progress ${{ inputs.your_file }} 2>&1 | tee wetransfer.log
+
+          L3=`sed -n '3p' wetransfer.log`
+          wet_DownloadLink=${L3#*: }
+        fi
+
+        echo "::set-output name=cow_DownloadLink::${cow_DownloadLink}"
+        echo "::set-output name=cow_DownloadCode::${cow_DownloadCode}"
+        echo "::set-output name=wet_DownloadLink::${wet_DownloadLink}"
       shell: bash
-      
